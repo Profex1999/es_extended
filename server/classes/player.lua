@@ -375,11 +375,28 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 				name = weaponName,
 				ammo = ammo,
 				label = weaponLabel,
-				components = {}
+				components = {},
+				tint = 0
 			})
 
 			self.triggerEvent('esx:addWeapon', weaponName, ammo)
 			self.triggerEvent('esx:addInventoryItem', weaponLabel, false, true)
+		end
+	end
+
+	self.getWeaponTint = function(weaponName)
+		local loadoutNum, weapon = self.getWeapon(weaponName)
+
+		if weapon then
+			return weapon.tint
+		end
+	end
+
+	self.setWeaponTint = function(weaponName, index)
+		local loadoutNum, weapon = self.getWeapon(weaponName)
+		if weapon then
+			weapon.tint = index
+			self.triggerEvent('esx:setWeaponTint', weaponName, index)
 		end
 	end
 

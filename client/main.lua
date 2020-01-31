@@ -86,7 +86,7 @@ AddEventHandler('esx:restoreLoadout', function()
 
 		GiveWeaponToPed(playerPed, weaponHash, 0, false, false)
 		local ammoType = GetPedAmmoTypeFromWeapon(playerPed, weaponHash)
-
+		SetPedWeaponTintIndex(playerPed, weaponHash, v.tint)
 		for k2,v2 in ipairs(v.components) do
 			local componentHash = ESX.GetWeaponComponent(weaponName, v2).hash
 
@@ -183,6 +183,11 @@ AddEventHandler('esx:addWeaponComponent', function(weaponName, weaponComponent)
 	GiveWeaponComponentToPed(playerPed, weaponHash, componentHash)
 end)
 
+RegisterNetEvent('esx:setWeaponTint')
+AddEventHandler('esx:setWeaponTint', function(weaponName, index)
+	SetPedWeaponTintIndex(PlayerPedId(), GetHashKey(weaponName), index)
+end)
+
 RegisterNetEvent('esx:setWeaponAmmo')
 AddEventHandler('esx:setWeaponAmmo', function(weaponName, weaponAmmo)
 	local playerPed  = PlayerPedId()
@@ -255,7 +260,7 @@ AddEventHandler('esx:spawnVehicle', function(vehicle)
 end)
 
 RegisterNetEvent('esx:createPickup')
-AddEventHandler('esx:createPickup', function(pickupId, label, playerId, type, name, components)
+AddEventHandler('esx:createPickup', function(pickupId, label, playerId, type, name, components, tint)
 	local playerPed = GetPlayerPed(GetPlayerFromServerId(playerId))
 	local entityCoords, forward, pickupObject = GetEntityCoords(playerPed), GetEntityForwardVector(playerPed)
 	local objectCoords = (entityCoords + forward * 1.0)
@@ -268,6 +273,7 @@ AddEventHandler('esx:createPickup', function(pickupId, label, playerId, type, na
 			local component = ESX.GetWeaponComponent(name, v)
 			GiveWeaponComponentToWeaponObject(pickupObject, component.hash)
 		end
+		SetWeaponObjectTintIndex(pickupObject, tint)
 	else
 		ESX.Game.SpawnLocalObject('prop_money_bag_01', objectCoords, function(obj)
 			pickupObject = obj
@@ -304,6 +310,7 @@ AddEventHandler('esx:createMissingPickups', function(missingPickups)
 				local component = ESX.GetWeaponComponent(pickup.name, componentName)
 				GiveWeaponComponentToWeaponObject(pickupObject, component.hash)
 			end
+			SetWeaponObjectTintIndex(pickupObject, pickup.tint)
 		else
 			ESX.Game.SpawnLocalObject('prop_money_bag_01', pickup.coords, function(obj)
 				pickupObject = obj

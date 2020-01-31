@@ -380,7 +380,7 @@ AddEventHandler('esx:removeInventoryItem', function(type, itemName, itemCount)
 			xPlayer.removeWeapon(itemName)
 
 			local pickupLabel = ('~y~%s~s~ [~g~%s~s~ ammo]'):format(weapon.label, weapon.ammo)
-			ESX.CreatePickup('item_weapon', itemName, weapon.ammo, pickupLabel, playerId, weapon.components)
+			ESX.CreatePickup('item_weapon', itemName, weapon.ammo, pickupLabel, playerId, weapon.components, weapon.tint)
 
 			if weapon.ammo > 0 then
 				xPlayer.showNotification(_U('threw_weapon_ammo', weapon.label, weapon.ammo))
@@ -431,6 +431,7 @@ AddEventHandler('esx:onPickup', function(id)
 				for k,v in ipairs(pickup.components) do
 					xPlayer.addWeaponComponent(pickup.name, v)
 				end
+				xPlayer.setWeaponTint(pickup.name, pickup.tint)
 			end
 		end
 

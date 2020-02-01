@@ -159,7 +159,7 @@ ESX.GetItemLabel = function(item)
 	end
 end
 
-ESX.CreatePickup = function(type, name, count, label, playerId, components, tint)
+ESX.CreatePickup = function(type, name, count, label, playerId, components, tintIndex)
 	local pickupId = (ESX.PickupId == 65635 and 0 or ESX.PickupId + 1)
 	local xPlayer = ESX.GetPlayerFromId(playerId)
 
@@ -173,10 +173,10 @@ ESX.CreatePickup = function(type, name, count, label, playerId, components, tint
 
 	if type == 'item_weapon' then
 		ESX.Pickups[pickupId].components = components
-		ESX.Pickups[pickupId].tint  = tint
+		ESX.Pickups[pickupId].tint  = tintIndex
 	end
 
-	TriggerClientEvent('esx:createPickup', -1, pickupId, label, playerId, type, name, components, tint)
+	TriggerClientEvent('esx:createPickup', -1, pickupId, label, playerId, type, name, components, tintIndex)
 	ESX.PickupId = pickupId
 end
 

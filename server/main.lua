@@ -157,10 +157,13 @@ AddEventHandler('es:playerLoaded', function(playerId, player)
 				if result[1].loadout then
 					userData.loadout = json.decode(result[1].loadout)
 
-					-- Compatibility with old loadouts prior to components update
+					-- Compatibility with old loadouts prior to components and tints update
 					for k,v in ipairs(userData.loadout) do
 						if v.components == nil then
 							v.components = {}
+						end
+						if v.tint == nil then
+							v.tint = 0
 						end
 					end
 				end

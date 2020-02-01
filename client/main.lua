@@ -87,6 +87,7 @@ AddEventHandler('esx:restoreLoadout', function()
 		GiveWeaponToPed(playerPed, weaponHash, 0, false, false)
 		local ammoType = GetPedAmmoTypeFromWeapon(playerPed, weaponHash)
 		SetPedWeaponTintIndex(playerPed, weaponHash, v.tint)
+			
 		for k2,v2 in ipairs(v.components) do
 			local componentHash = ESX.GetWeaponComponent(weaponName, v2).hash
 
@@ -184,8 +185,8 @@ AddEventHandler('esx:addWeaponComponent', function(weaponName, weaponComponent)
 end)
 
 RegisterNetEvent('esx:setWeaponTint')
-AddEventHandler('esx:setWeaponTint', function(weaponName, index)
-	SetPedWeaponTintIndex(PlayerPedId(), GetHashKey(weaponName), index)
+AddEventHandler('esx:setWeaponTint', function(weaponName, tintIndex)
+	SetPedWeaponTintIndex(PlayerPedId(), GetHashKey(weaponName), tintIndex)
 end)
 
 RegisterNetEvent('esx:setWeaponAmmo')

@@ -394,6 +394,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 
 	self.setWeaponTint = function(weaponName, index)
 		local loadoutNum, weapon = self.getWeapon(weaponName)
+		
 		if weapon then
 			weapon.tint = index
 			self.triggerEvent('esx:setWeaponTint', weaponName, index)

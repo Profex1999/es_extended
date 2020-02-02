@@ -162,6 +162,7 @@ AddEventHandler('es:playerLoaded', function(playerId, player)
 						if v.components == nil then
 							v.components = {}
 						end
+										
 						if v.tint == nil then
 							v.tint = 0
 						end

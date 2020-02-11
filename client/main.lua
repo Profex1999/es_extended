@@ -414,7 +414,7 @@ Citizen.CreateThread(function()
 			local weaponHash = GetHashKey(weaponName)
 			local weaponComponents = {}
 
-			if HasPedGotWeapon(playerPed, weaponHash, false) and weaponName ~= 'WEAPON_UNARMED' then
+			if HasPedGotWeapon(playerPed, weaponHash, false) then
 				local ammo = GetAmmoInPedWeapon(playerPed, weaponHash)
 
 				for k2,v2 in ipairs(v.components) do
@@ -446,6 +446,7 @@ Citizen.CreateThread(function()
 
 		if loadoutChanged and isLoadoutLoaded then
 			ESX.PlayerData.loadout = loadout
+			TriggerServerEvent('esx:updateLoadout', loadout)
 		end
 	end
 end)

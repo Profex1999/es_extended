@@ -281,9 +281,15 @@ ESX.UI.ShowInventoryItemNotification = function(add, item, count)
 	})
 end
 
-ESX.Game.GetPedMugshot = function(ped)
+ESX.Game.GetPedMugshot = function(ped, transparent)
 	if DoesEntityExist(ped) then
-		local mugshot = RegisterPedheadshot(ped)
+		local mugshot
+
+		if transparent then
+			mugshot = RegisterPedheadshotTransparent(ped)
+		else
+			mugshot = RegisterPedheadshot(ped)
+		end
 
 		while not IsPedheadshotReady(mugshot) do
 			Citizen.Wait(0)
@@ -300,7 +306,6 @@ ESX.Game.Teleport = function(entity, coords, cb)
 		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 
 		while not HasCollisionLoadedAroundEntity(entity) do
-			RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 			Citizen.Wait(0)
 		end
 
@@ -372,7 +377,6 @@ ESX.Game.SpawnVehicle = function(modelName, coords, heading, cb)
 		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 
 		while not HasCollisionLoadedAroundEntity(vehicle) do
-			RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 			Citizen.Wait(0)
 		end
 
@@ -399,7 +403,6 @@ ESX.Game.SpawnLocalVehicle = function(modelName, coords, heading, cb)
 		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 
 		while not HasCollisionLoadedAroundEntity(vehicle) do
-			RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 			Citizen.Wait(0)
 		end
 
@@ -676,6 +679,7 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 
 			wheels            = GetVehicleWheelType(vehicle),
 			windowTint        = GetVehicleWindowTint(vehicle),
+			xenonColor        = GetVehicleXenonLightsColour(vehicle),
 
 			neonEnabled       = {
 				IsVehicleNeonLightEnabled(vehicle, 0),
@@ -758,7 +762,7 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		if props.color1 then SetVehicleColours(vehicle, props.color1, colorSecondary) end
 		if props.color2 then SetVehicleColours(vehicle, props.color1 or colorPrimary, props.color2) end
 		if props.pearlescentColor then SetVehicleExtraColours(vehicle, props.pearlescentColor, wheelColor) end
-		if props.wheelColor then SetVehicleExtraColours(vehicle, pearlescentColor, props.wheelColor) end
+		if props.wheelColor then SetVehicleExtraColours(vehicle, props.pearlescentColor or pearlescentColor, props.wheelColor) end
 		if props.wheels then SetVehicleWheelType(vehicle, props.wheels) end
 		if props.windowTint then SetVehicleWindowTint(vehicle, props.windowTint) end
 
@@ -780,6 +784,7 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		end
 
 		if props.neonColor then SetVehicleNeonLightsColour(vehicle, props.neonColor[1], props.neonColor[2], props.neonColor[3]) end
+		if props.xenonColor then SetVehicleXenonLightsColour(vehicle, props.xenonColor) end
 		if props.modSmokeEnabled then ToggleVehicleMod(vehicle, 20, true) end
 		if props.tyreSmokeColor then SetVehicleTyreSmokeColor(vehicle, props.tyreSmokeColor[1], props.tyreSmokeColor[2], props.tyreSmokeColor[3]) end
 		if props.modSpoilers then SetVehicleMod(vehicle, 0, props.modSpoilers, false) end
@@ -864,20 +869,6 @@ end
 ESX.ShowInventory = function()
 	local playerPed = PlayerPedId()
 	local elements, currentWeight = {}, 0
-
-	if ESX.PlayerData.money > 0 then
-		local formattedMoney = _U('locale_currency', ESX.Math.GroupDigits(ESX.PlayerData.money))
-
-		table.insert(elements, {
-			label = ('%s: <span style="color:green;">%s</span>'):format(_U('cash'), formattedMoney),
-			count = ESX.PlayerData.money,
-			type = 'item_money',
-			value = 'money',
-			usable = false,
-			rare = false,
-			canRemove = true
-		})
-	end
 
 	for k,v in pairs(ESX.PlayerData.accounts) do
 		if v.money > 0 then

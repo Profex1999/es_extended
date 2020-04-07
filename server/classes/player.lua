@@ -1,32 +1,24 @@
-function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, coords)
+function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, weight, job, loadout, name, coords)
 	local self = {}
 
-	self.player    = player
-	self.accounts  = accounts
+	self.accounts = accounts
+	self.coords = coords
+	self.group = group
+	self.identifier = identifier
 	self.inventory = inventory
-	self.job       = job
-	self.loadout   = loadout
-	self.name      = name
+	self.job = job
+	self.loadout = loadout
+	self.name = name
+	self.playerId = playerId
+	self.source = playerId
+	self.variables = {}
+	self.weight = weight
 	self.maxWeight = Config.MaxWeight
-	self.coords    = coords
 
-	self.source     = self.player.get('source')
-	self.identifier = self.player.get('identifier')
+	ExecuteCommand(('add_principal identifier.license:%s group.%s'):format(self.identifier, self.group))
 
 	self.triggerEvent = function(eventName, ...)
 		TriggerClientEvent(eventName, self.source, ...)
-	end
-
-	self.setMoney = function(money)
-		money = ESX.Math.Round(money)
-
-		if money >= 0 then
-			self.player.setMoney(money)
-		end
-	end
-
-	self.getMoney = function()
-		return self.player.get('money')
 	end
 
 	self.setCoords = function(coords)
@@ -35,7 +27,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 	end
 
 	self.updateCoords = function(coords)
-		self.coords = {x = ESX.Math.Round(coords.x, 1), y = ESX.Math.Round(coords.y, 1), z = ESX.Math.Round(coords.z, 1), heading = ESX.Math.Round(coords.heading, 1)}
+		self.coords = {x = ESX.Math.Round(coords.x, 1), y = ESX.Math.Round(coords.y, 1), z = ESX.Math.Round(coords.z, 1), heading = ESX.Math.Round(coords.heading or 0.0, 1)}
 	end
 
 	self.getCoords = function(vector)
@@ -50,78 +42,62 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		DropPlayer(self.source, reason)
 	end
 
+	self.setMoney = function(money)
+		money = ESX.Math.Round(money)
+		self.setAccountMoney('money', money)
+	end
+
+	self.getMoney = function()
+		return self.getAccount('money').money
+	end
+
 	self.addMoney = function(money)
 		money = ESX.Math.Round(money)
-
-		if money >= 0 then
-			self.player.addMoney(money)
-		end
+		self.addAccountMoney('money', money)
 	end
 
 	self.removeMoney = function(money)
 		money = ESX.Math.Round(money)
-
-		if money > 0 then
-			self.player.removeMoney(money)
-		end
-	end
-
-	self.displayMoney = function(money)
-		self.player.displayMoney(money)
+		self.removeAccountMoney('money', money)
 	end
 
 	self.getIdentifier = function()
-		return self.player.getIdentifier()
+		return self.identifier
+	end
+
+	self.setGroup = function(newGroup)
+		ExecuteCommand(('remove_principal identifier.license:%s group.%s'):format(self.identifier, self.group))
+		self.group = newGroup
+		ExecuteCommand(('add_principal identifier.license:%s group.%s'):format(self.identifier, self.group))
 	end
 
 	self.getGroup = function()
-		return self.player.getGroup()
+		return self.group
 	end
 
 	self.set = function(k, v)
-		self.player.set(k, v)
+		self.variables[k] = v
 	end
 
 	self.get = function(k)
-		return self.player.get(k)
+		return self.variables[k]
 	end
 
-	self.getPlayer = function()
-		return self.player
-	end
+	self.getAccounts = function(minimal)
+		if minimal then
+			local minimalAccounts = {}
 
-	self.getAccounts = function()
-		local accounts = {}
-
-		for k,account in ipairs(Config.Accounts) do
-			if account == 'bank' then
-				table.insert(accounts, {
-					name  = 'bank',
-					money = self.get('bank'),
-					label = Config.AccountLabels.bank
-				})
-			else
-				for k2,v2 in ipairs(self.accounts) do
-					if v2.name == account then
-						table.insert(accounts, v2)
-						break
-					end
-				end
+			for k,v in ipairs(self.accounts) do
+				minimalAccounts[v.name] = v.money
 			end
-		end
 
-		return accounts
+			return minimalAccounts
+		else
+			return self.accounts
+		end
 	end
 
 	self.getAccount = function(account)
-		if account == 'bank' then
-			return {
-				name  = 'bank',
-				money = self.get('bank'),
-				label = Config.AccountLabels.bank
-			}
-		end
-
 		for k,v in ipairs(self.accounts) do
 			if v.name == account then
 				return v
@@ -129,16 +105,53 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		end
 	end
 
-	self.getInventory = function()
-		return self.inventory
+	self.getInventory = function(minimal)
+		if minimal then
+			local minimalInventory = {}
+
+			for k,v in ipairs(self.inventory) do
+				if v.count > 0 then
+					minimalInventory[v.name] = v.count
+				end
+			end
+
+			return minimalInventory
+		else
+			return self.inventory
+		end
 	end
 
 	self.getJob = function()
 		return self.job
 	end
 
-	self.getLoadout = function()
-		return self.loadout
+	self.getLoadout = function(minimal)
+		if minimal then
+			local minimalLoadout = {}
+
+			for k,v in ipairs(self.loadout) do
+				minimalLoadout[v.name] = {ammo = v.ammo}
+				if v.tintIndex > 0 then minimalLoadout[v.name].tintIndex = v.tintIndex end
+
+				if #v.components > 0 then
+					local components = {}
+
+					for k2,component in ipairs(v.components) do
+						if component ~= 'clip_default' then
+							table.insert(components, component)
+						end
+					end
+
+					if #components > 0 then
+						minimalLoadout[v.name].components = components
+					end
+				end
+			end
+
+			return minimalLoadout
+		else
+			return self.loadout
+		end
 	end
 
 	self.getName = function()
@@ -149,46 +162,6 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		self.name = newName
 	end
 
-	self.getMissingAccounts = function(cb)
-		MySQL.Async.fetchAll('SELECT name FROM user_accounts WHERE identifier = @identifier', {
-			['@identifier'] = self.getIdentifier()
-		}, function(result)
-			local missingAccounts = {}
-
-			for k,v in ipairs(Config.Accounts) do
-				if v ~= 'bank' then
-					local found = false
-
-					for k2,v2 in ipairs(result) do
-						if v == v2.name then
-							found = true
-							break
-						end
-					end
-
-					if not found then
-						table.insert(missingAccounts, v)
-					end
-				end
-			end
-
-			cb(missingAccounts)
-		end)
-	end
-
-	self.createAccounts = function(missingAccounts, cb)
-		for k,v in ipairs(missingAccounts) do
-			MySQL.Async.execute('INSERT INTO user_accounts (identifier, name) VALUES (@identifier, @name)', {
-				['@identifier'] = self.getIdentifier(),
-				['@name'] = v
-			}, function(rowsChanged)
-				if cb then
-					cb()
-				end
-			end)
-		end
-	end
-
 	self.setAccountMoney = function(accountName, money)
 		if money >= 0 then
 			local account = self.getAccount(accountName)
@@ -196,12 +169,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 			if account then
 				local prevMoney = account.money
 				local newMoney = ESX.Math.Round(money)
-
 				account.money = newMoney
-
-				if accountName == 'bank' then
-					self.set('bank', newMoney)
-				end
 
 				self.triggerEvent('esx:setAccountMoney', account)
 			end
@@ -215,11 +183,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 			if account then
 				local newMoney = account.money + ESX.Math.Round(money)
 				account.money = newMoney
-	
-				if accountName == 'bank' then
-					self.set('bank', newMoney)
-				end
-	
+
 				self.triggerEvent('esx:setAccountMoney', account)
 			end
 		end
@@ -232,11 +196,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 			if account then
 				local newMoney = account.money - ESX.Math.Round(money)
 				account.money = newMoney
-	
-				if accountName == 'bank' then
-					self.set('bank', newMoney)
-				end
-	
+
 				self.triggerEvent('esx:setAccountMoney', account)
 			end
 		end
@@ -257,9 +217,8 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 
 		if item then
 			count = ESX.Math.Round(count)
-
-			local newCount = item.count + count
-			item.count = newCount
+			item.count = item.count + count
+			self.weight = self.weight + (item.weight * count)
 
 			TriggerEvent('esx:onAddInventoryItem', self.source, item.name, item.count)
 			self.triggerEvent('esx:addInventoryItem', item.name, item.count)
@@ -275,6 +234,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 
 			if newCount >= 0 then
 				item.count = newCount
+				self.weight = self.weight - (item.weight * count)
 
 				TriggerEvent('esx:onRemoveInventoryItem', self.source, item.name, item.count)
 				self.triggerEvent('esx:removeInventoryItem', item.name, item.count)
@@ -297,17 +257,15 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 	end
 
 	self.getWeight = function()
-		local inventoryWeight = 0
+		return self.weight
+	end
 
-		for k,v in ipairs(self.inventory) do
-			inventoryWeight = inventoryWeight + (v.count * v.weight)
-		end
-
-		return inventoryWeight
+	self.getMaxWeight = function()
+		return self.maxWeight
 	end
 
 	self.canCarryItem = function(name, count)
-		local currentWeight, itemWeight = self.getWeight(), ESX.Items[name].weight
+		local currentWeight, itemWeight = self.weight, ESX.Items[name].weight
 		local newWeight = currentWeight + (itemWeight * count)
 
 		return newWeight <= self.maxWeight
@@ -318,7 +276,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		local testItemObject = self.getInventoryItem(testItem)
 
 		if firstItemObject.count >= firstItemCount then
-			local weightWithoutFirstItem = ESX.Math.Round(self.getWeight() - (firstItemObject.weight * firstItemCount))
+			local weightWithoutFirstItem = ESX.Math.Round(self.weight - (firstItemObject.weight * firstItemCount))
 			local weightWithTestItem = ESX.Math.Round(weightWithoutFirstItem + (testItemObject.weight * testItemCount))
 
 			return weightWithTestItem <= self.maxWeight
@@ -376,7 +334,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 				ammo = ammo,
 				label = weaponLabel,
 				components = {},
-				tint = 0
+				tintIndex = 0
 			})
 
 			self.triggerEvent('esx:addWeapon', weaponName, ammo)
@@ -426,7 +384,41 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		end
 	end
 
-	self.removeWeapon = function(weaponName, ammo)
+	self.updateWeaponAmmo = function(weaponName, ammoCount)
+		local loadoutNum, weapon = self.getWeapon(weaponName)
+
+		if weapon then
+			if ammoCount < weapon.ammo then
+				weapon.ammo = ammoCount
+			end
+		end
+	end
+
+	self.setWeaponTint = function(weaponName, weaponTintIndex)
+		local loadoutNum, weapon = self.getWeapon(weaponName)
+
+		if weapon then
+			local weaponNum, weaponObject = ESX.GetWeapon(weaponName)
+
+			if weaponObject.tints and weaponObject.tints[weaponTintIndex] then
+				self.loadout[loadoutNum].tintIndex = weaponTintIndex
+				self.triggerEvent('esx:setWeaponTint', weaponName, weaponTintIndex)
+				self.triggerEvent('esx:addInventoryItem', weaponObject.tints[weaponTintIndex], false, true)
+			end
+		end
+	end
+
+	self.getWeaponTint = function(weaponName)
+		local loadoutNum, weapon = self.getWeapon(weaponName)
+
+		if weapon then
+			return weapon.tintIndex
+		end
+
+		return 0
+	end
+
+	self.removeWeapon = function(weaponName)
 		local weaponLabel
 
 		for k,v in ipairs(self.loadout) do
@@ -443,7 +435,7 @@ function CreateExtendedPlayer(player, accounts, inventory, job, loadout, name, c
 		end
 
 		if weaponLabel then
-			self.triggerEvent('esx:removeWeapon', weaponName, ammo)
+			self.triggerEvent('esx:removeWeapon', weaponName)
 			self.triggerEvent('esx:removeInventoryItem', weaponLabel, false, true)
 		end
 	end

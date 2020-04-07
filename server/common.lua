@@ -5,10 +5,10 @@ ESX.Items = {}
 ESX.ServerCallbacks = {}
 ESX.TimeoutCount = -1
 ESX.CancelledTimeouts = {}
-ESX.LastPlayerData = {}
 ESX.Pickups = {}
 ESX.PickupId = 0
 ESX.Jobs = {}
+ESX.RegisteredCommands = {}
 
 AddEventHandler('esx:getSharedObject', function(cb)
 	cb(ESX)
@@ -57,24 +57,6 @@ MySQL.ready(function()
 	print('[es_extended] [^2INFO^7] ESX developed by ESX-Org has been initialized')
 end)
 
-AddEventHandler('esx:playerLoaded', function(playerId)
-	local xPlayer, accounts, items = ESX.GetPlayerFromId(playerId), {}, {}
-	local xPlayerAccounts, xPlayerItems = xPlayer.getAccounts(), xPlayer.getInventory()
-
-	for i=1, #xPlayerAccounts, 1 do
-		accounts[xPlayerAccounts[i].name] = xPlayerAccounts[i].money
-	end
-
-	for i=1, #xPlayerItems, 1 do
-		items[xPlayerItems[i].name] = xPlayerItems[i].count
-	end
-
-	ESX.LastPlayerData[playerId] = {
-		accounts = accounts,
-		items = items
-	}
-end)
-
 RegisterServerEvent('esx:clientLog')
 AddEventHandler('esx:clientLog', function(msg)
 	if Config.EnableDebug then
@@ -86,7 +68,7 @@ RegisterServerEvent('esx:triggerServerCallback')
 AddEventHandler('esx:triggerServerCallback', function(name, requestId, ...)
 	local playerId = source
 
-	ESX.TriggerServerCallback(name, requestID, playerId, function(...)
+	ESX.TriggerServerCallback(name, requestId, playerId, function(...)
 		TriggerClientEvent('esx:serverCallback', playerId, requestId, ...)
 	end, ...)
 end)
